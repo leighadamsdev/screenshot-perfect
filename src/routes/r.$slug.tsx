@@ -18,7 +18,7 @@ export const Route = createFileRoute("/r/$slug")({
   component: RecruiterPage,
 });
 
-type Stats = Record<string, number | boolean | null> & { review_count: number; enough: boolean };
+type Stats = { review_count: number; enough: boolean; overall: number | null; never_heard_pct: number | null; [k: string]: number | boolean | null };
 
 function RecruiterPage() {
   const { slug } = Route.useParams();

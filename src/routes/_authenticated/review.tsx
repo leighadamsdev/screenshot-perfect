@@ -36,7 +36,7 @@ const empty: Form = {
   title: "", body: "", rating_communication: null, rating_honesty: null, rating_respect: null, rating_relevance: null, rating_feedback: null,
 };
 // undefined = not yet answered, null = Not applicable
-type RatingState = Record<string, number | null | undefined>;
+type RatingState = Partial<Record<(typeof RATINGS)[number]["key"], number | null>>;
 
 const schema = z.object({
   sector: z.string().min(1, "Choose a sector"),
@@ -116,7 +116,7 @@ function ReviewPage() {
       if (d) {
         setConsent(true);
         const x: Record<string, string> = {};
-        DEMOGRAPHICS.forEach((q) => (x[q.key] = (d as Record<string, string>)[q.key]));
+        DEMOGRAPHICS.forEach((q) => (x[q.key] = (d as unknown as Record<string, string>)[q.key] ?? "prefer_not"));
         setDemo(x);
       }
     })();
