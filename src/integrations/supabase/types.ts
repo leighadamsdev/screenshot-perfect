@@ -14,16 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      recruiters: {
+        Row: {
+          approved: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+          type: Database["public"]["Enums"]["recruiter_type"]
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug: string
+          type: Database["public"]["Enums"]["recruiter_type"]
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          type?: Database["public"]["Enums"]["recruiter_type"]
+        }
+        Relationships: []
+      }
+      review_demographics: {
+        Row: {
+          adjustments: string
+          age_band: string
+          created_at: string
+          disability: string
+          ethnic_group: string
+          gender: string
+          parent_occupation: string
+          qualification: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          adjustments?: string
+          age_band?: string
+          created_at?: string
+          disability?: string
+          ethnic_group?: string
+          gender?: string
+          parent_occupation?: string
+          qualification?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          adjustments?: string
+          age_band?: string
+          created_at?: string
+          disability?: string
+          ethnic_group?: string
+          gender?: string
+          parent_occupation?: string
+          qualification?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_demographics_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          outcome: string
+          overall: number
+          pay_disclosed: string
+          rating_communication: number | null
+          rating_feedback: number | null
+          rating_honesty: number | null
+          rating_relevance: number | null
+          rating_respect: number | null
+          recruiter_id: string
+          red_flags: string[]
+          role_level: string
+          sector: string
+          status: string
+          time_to_answer: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          outcome: string
+          overall: number
+          pay_disclosed: string
+          rating_communication?: number | null
+          rating_feedback?: number | null
+          rating_honesty?: number | null
+          rating_relevance?: number | null
+          rating_respect?: number | null
+          recruiter_id: string
+          red_flags?: string[]
+          role_level: string
+          sector: string
+          status?: string
+          time_to_answer: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          outcome?: string
+          overall?: number
+          pay_disclosed?: string
+          rating_communication?: number | null
+          rating_feedback?: number | null
+          rating_honesty?: number | null
+          rating_relevance?: number | null
+          rating_respect?: number | null
+          recruiter_id?: string
+          red_flags?: string[]
+          role_level?: string
+          sector?: string
+          status?: string
+          time_to_answer?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_recruiter_id_fkey"
+            columns: ["recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      recent_recruiters: {
+        Args: { _limit?: number }
+        Returns: {
+          id: string
+          last_review_at: string
+          name: string
+          overall: number
+          review_count: number
+          slug: string
+          type: Database["public"]["Enums"]["recruiter_type"]
+        }[]
+      }
+      recruiter_stats: { Args: { _recruiter_id: string }; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      recruiter_type: "in_house" | "agency"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +341,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      recruiter_type: ["in_house", "agency"],
+    },
   },
 } as const
