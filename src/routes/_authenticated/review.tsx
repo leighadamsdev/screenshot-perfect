@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { StarInput } from "@/components/brand";
+import { StarInput, Stars } from "@/components/brand";
+import { overallRating } from "@/lib/scoring";
 import {
   DEMOGRAPHICS, OUTCOMES, PAY_DISCLOSED, RATINGS, RED_FLAGS, ROLE_LEVELS, SECTORS, TIME_TO_ANSWER, slugify, type Opt,
 } from "@/lib/options";
@@ -38,16 +39,23 @@ const empty: Form = {
 // undefined = not yet answered, null = Not applicable
 type RatingState = Partial<Record<(typeof RATINGS)[number]["key"], number | null>>;
 
+// Limits match review_text_problems in the database.
+const TITLE_MAX = 60;
+const BODY_MAX = 600;
+
 const schema = z.object({
   sector: z.string().min(1, "Choose a sector"),
   role_level: z.string().min(1, "Choose the level of role"),
   outcome: z.string().min(1, "Tell us what happened"),
   time_to_answer: z.string().min(1, "Choose how long it took"),
   pay_disclosed: z.string().min(1, "Choose when you found out the pay"),
-  overall: z.number({ message: "Give an overall rating" }).int().min(1).max(5),
-  title: z.string().trim().min(1, "Add a title").max(80, "Title must be 80 characters or fewer"),
-  body: z.string().trim().min(1, "Write your review").max(1000, "Review must be 1,000 characters or fewer"),
+  title: z.string().trim().min(5, "Add a title of at least 5 characters").max(TITLE_MAX, `Keep the title to ${TITLE_MAX} characters or fewer`),
+  body: z.string().trim().min(30, "Write at least 30 characters about what happened").max(BODY_MAX, `Keep the review to ${BODY_MAX} characters or fewer`),
 });
+
+// Server error raised by the review checks in the database (see reviews_validate).
+const isReviewTextError = (e: unknown): e is { message: string } =>
+  typeof e === "object" && e !== null && (e as { hint?: string }).hint === "review_text";
 
 const selectCls = "h-11 w-full rounded-md border border-input bg-background px-3 text-base";
 
@@ -123,6 +131,7 @@ function ReviewPage() {
   }, [edit]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((p) => ({ ...p, [k]: v }));
+  const overall = overallRating({ ...f, ...ratings });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -133,12 +142,23 @@ function ReviewPage() {
     if (newMode && (newName.trim().length < 2 || newName.trim().length > 120)) errs.push("Enter the recruiter's name");
     if (newMode && !newType) errs.push("Choose whether the new recruiter is in-house or an agency");
     RATINGS.forEach((rt) => { if (ratings[rt.key] === undefined) errs.push(`Rate ${rt.label.toLowerCase()} or choose Not applicable`); });
-    setErrors(errs);
-    if (errs.length || !parsed.success) {
+    if (!errs.length && overall == null) errs.push("Rate at least one of the five categories");
+    const showErrors = (list: string[]) => {
+      setErrors(list);
       setTimeout(() => document.getElementById("error-summary")?.focus(), 0);
-      return;
-    }
+    };
+    if (errs.length || !parsed.success) return showErrors(errs);
     setSaving(true);
+    // Check wording before saving anything, so a new recruiter isn't added for a review that can't be published.
+    const check = await supabase.rpc("review_text_problems", {
+      _recruiter_id: newMode && !edit ? null : recruiterId || null,
+      _title: parsed.data.title, _body: parsed.data.body, _extra_name: newMode && !edit ? newName.trim() : null,
+    });
+    if (check.data?.length) {
+      setSaving(false);
+      return showErrors(check.data);
+    }
+    setErrors([]);
     try {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user!.id;
@@ -179,6 +199,11 @@ function ReviewPage() {
       toast.success(newMode ? "Thanks! Your review will appear once this recruiter is approved." : "Thanks, your review is live.");
       navigate({ to: "/my-reviews" });
     } catch (err) {
+      if (isReviewTextError(err)) {
+        setErrors(err.message.split("\n"));
+        setTimeout(() => document.getElementById("error-summary")?.focus(), 0);
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSaving(false);
@@ -251,16 +276,35 @@ function ReviewPage() {
 
       <section className="space-y-5">
         <h2 className="text-xl font-bold">Your review</h2>
-        <StarInput name="overall" legend="Overall rating" value={f.overall} onChange={(v) => set("overall", v)} />
+        <div className="space-y-1" aria-live="polite">
+          <p className="font-semibold">Overall rating</p>
+          {overall == null ? (
+            <p className="text-muted-foreground">Calculated from your answers above once you've rated at least one category.</p>
+          ) : (
+            <p className="flex items-center gap-2">
+              <Stars value={overall} size={28} />
+              <span className="text-lg font-bold">{overall.toFixed(1)}</span>
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">Worked out from the five categories, to the nearest half star. You can't set it directly.</p>
+        </div>
+        <div className="rounded-lg border p-4 text-sm" id="writing-rules">
+          <p className="font-semibold">Keep it factual and to the point</p>
+          <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+            <li>Describe what happened and how it affected you.</li>
+            <li>Don't name the recruiter, company or any individual.</li>
+            <li>No offensive language, links, emails or phone numbers.</li>
+          </ul>
+        </div>
         <div className="space-y-1">
           <label htmlFor="title" className="font-semibold">Title</label>
-          <Input id="title" className="h-11" maxLength={80} value={f.title} onChange={(e) => set("title", e.target.value)} aria-describedby="title-count" />
-          <p id="title-count" className="text-sm text-muted-foreground">{f.title.length}/80</p>
+          <Input id="title" className="h-11" maxLength={TITLE_MAX} value={f.title} onChange={(e) => set("title", e.target.value)} aria-describedby="title-count writing-rules" />
+          <p id="title-count" className="text-sm text-muted-foreground">{f.title.length}/{TITLE_MAX}</p>
         </div>
         <div className="space-y-1">
           <label htmlFor="body" className="font-semibold">Review</label>
-          <Textarea id="body" rows={7} maxLength={1000} value={f.body} onChange={(e) => set("body", e.target.value)} aria-describedby="body-count" />
-          <p id="body-count" className="text-sm text-muted-foreground">{f.body.length.toLocaleString("en-GB")}/1,000</p>
+          <Textarea id="body" rows={6} maxLength={BODY_MAX} value={f.body} onChange={(e) => set("body", e.target.value)} aria-describedby="body-count writing-rules" />
+          <p id="body-count" className="text-sm text-muted-foreground">{f.body.length}/{BODY_MAX} (at least 30)</p>
         </div>
       </section>
 
