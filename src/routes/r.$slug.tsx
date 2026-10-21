@@ -49,7 +49,8 @@ function RecruiterPage() {
       let q = supabase.from("reviews")
         .select("id,title,body,overall,outcome,role_level,sector,red_flags,created_at")
         .eq("recruiter_id", id!).eq("status", "published").order("created_at", { ascending: false });
-      if (filter) q = q.eq("overall", filter);
+      // Ratings come in half stars, so "4★" covers 4 and 4.5.
+      if (filter) q = q.gte("overall", filter).lt("overall", filter + 1);
       const { data, error } = await q;
       if (error) throw error;
       return data;
@@ -123,7 +124,7 @@ function RecruiterPage() {
           {reviews.data?.map((rv) => (
             <li key={rv.id} className="rounded-xl border p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Stars value={rv.overall} />
+                <span className="flex items-center gap-2"><Stars value={Number(rv.overall)} /> <span className="font-semibold">{Number(rv.overall).toFixed(1)}</span></span>
                 <time className="text-sm text-muted-foreground" dateTime={rv.created_at}>
                   {new Date(rv.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                 </time>

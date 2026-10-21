@@ -119,7 +119,7 @@ export type Database = {
           created_at?: string
           id?: string
           outcome: string
-          overall: number
+          overall?: number
           pay_disclosed: string
           rating_communication?: number | null
           rating_feedback?: number | null
@@ -211,6 +211,10 @@ export type Database = {
         }[]
       }
       recruiter_stats: { Args: { _recruiter_id: string }; Returns: Json }
+      review_text_problems: {
+        Args: { _recruiter_id: string | null; _title: string; _body: string; _extra_name?: string | null }
+        Returns: string[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
