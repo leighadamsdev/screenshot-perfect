@@ -10,33 +10,85 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedMyReviewsRouteImport } from './routes/_authenticated/my-reviews'
+import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
+import { Route as RSlugRouteImport } from './routes/r.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedMyReviewsRoute = AuthenticatedMyReviewsRouteImport.update({
+  id: '/my-reviews',
+  path: '/my-reviews',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const RSlugRoute = RSlugRouteImport.update({
+  id: '/r/$slug',
+  path: '/r/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/my-reviews': typeof AuthenticatedMyReviewsRoute
+  '/review': typeof AuthenticatedReviewRoute
+  '/r/$slug': typeof RSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/my-reviews': typeof AuthenticatedMyReviewsRoute
+  '/review': typeof AuthenticatedReviewRoute
+  '/r/$slug': typeof RSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/my-reviews': typeof AuthenticatedMyReviewsRoute
+  '/_authenticated/review': typeof AuthenticatedReviewRoute
+  '/r/$slug': typeof RSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/auth' | '/my-reviews' | '/review' | '/r/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/auth' | '/my-reviews' | '/review' | '/r/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/my-reviews'
+    | '/_authenticated/review'
+    | '/r/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  RSlugRoute: typeof RSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +100,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/my-reviews': {
+      id: '/_authenticated/my-reviews'
+      path: '/my-reviews'
+      fullPath: '/my-reviews'
+      preLoaderRoute: typeof AuthenticatedMyReviewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/review': {
+      id: '/_authenticated/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof AuthenticatedReviewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/r/$slug': {
+      id: '/r/$slug'
+      path: '/r/$slug'
+      fullPath: '/r/$slug'
+      preLoaderRoute: typeof RSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedMyReviewsRoute: typeof AuthenticatedMyReviewsRoute
+  AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedMyReviewsRoute: AuthenticatedMyReviewsRoute,
+  AuthenticatedReviewRoute: AuthenticatedReviewRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  RSlugRoute: RSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
