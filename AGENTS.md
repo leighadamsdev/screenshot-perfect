@@ -8,3 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Public scores are computed in SQL functions (`recruiter_stats`, `recent_recruiters`) and hidden below 5 reviews; never compute them in the browser — keeps the threshold enforced in one place.
+- Demographic answers live in a separate `review_demographics` table readable only by the owner — row-level security can't hide columns, so they must never sit on `reviews`.
+- Form option lists live in `src/lib/options.ts`; DB check constraints mirror those values, so change both together.
