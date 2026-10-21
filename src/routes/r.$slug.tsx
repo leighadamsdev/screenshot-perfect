@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Stars } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { OUTCOMES, RATINGS, RED_FLAGS, ROLE_LEVELS, labelFor } from "@/lib/options";
+import { CRITERIA, OUTCOMES, RED_FLAGS, ROLE_LEVELS, labelFor } from "@/lib/options";
 
 export const Route = createFileRoute("/r/$slug")({
   head: () => ({
@@ -82,19 +82,27 @@ function RecruiterPage() {
               <Stars value={Number(s.overall)} size={24} />
               <p className="pt-2"><strong>{String(s.never_heard_pct)}%</strong> never heard back</p>
             </div>
-            <dl className="space-y-3">
-              {RATINGS.map((rt) => {
-                const v = s[rt.stat] as number | null;
-                return (
-                  <div key={rt.key}>
-                    <div className="flex justify-between text-sm"><dt>{rt.label}</dt><dd className="font-semibold">{v ?? "N/A"}</dd></div>
-                    <div className="mt-1 h-2.5 rounded-full bg-secondary" aria-hidden>
-                      <div className="h-full rounded-full bg-brand-red" style={{ width: `${((v ?? 0) / 5) * 100}%` }} />
+            <div className="space-y-3">
+              <h3 className="font-bold">Scores across 5 criteria</h3>
+              <dl className="space-y-4">
+                {CRITERIA.map((c) => {
+                  const v = s[c.stat] as number | null;
+                  return (
+                    <div key={c.stat}>
+                      <div className="flex justify-between gap-4 text-sm">
+                        <dt className="font-medium">{c.label}</dt>
+                        <dd className="font-semibold">{v == null ? "N/A" : <>{v}<span className="sr-only"> out of 5</span></>}</dd>
+                      </div>
+                      <div className="mt-1 h-2.5 rounded-full bg-secondary" aria-hidden>
+                        <div className="h-full rounded-full bg-brand-red" style={{ width: `${((v ?? 0) / 5) * 100}%` }} />
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{c.explain}</p>
                     </div>
-                  </div>
-                );
-              })}
-            </dl>
+                  );
+                })}
+              </dl>
+              <p className="text-xs text-muted-foreground">Each criterion is scored 1–5 per review, then averaged across all published reviews.</p>
+            </div>
           </div>
         ) : null}
       </section>

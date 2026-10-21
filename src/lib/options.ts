@@ -33,6 +33,36 @@ export const RATINGS = [
   { key: "rating_feedback", stat: "feedback", label: "Feedback" },
 ] as const;
 
+// The 5 public criteria. Scores are calculated in SQL (`review_criteria`, `recruiter_stats`);
+// the explanations below describe that calculation, so keep them in step with it.
+export const CRITERIA = [
+  {
+    stat: "communication_speed",
+    label: "Communication and speed",
+    explain: "Communication rating and time to a final answer. Scores 1 if the applicant never heard back or the recruiter stopped responding.",
+  },
+  {
+    stat: "honesty_transparency",
+    label: "Honesty and transparency",
+    explain: "Honesty rating and how early the pay was shared. Scores 1 if the job may not have existed.",
+  },
+  {
+    stat: "respect_fairness",
+    label: "Respect and fairness",
+    explain: "Respect rating, minus a point each for pressure tactics or intrusive questions. Scores 1 if the applicant felt discriminated against.",
+  },
+  {
+    stat: "process",
+    label: "Fair, efficient process",
+    explain: "Relevance rating, minus a point each for long waits or an unpaid task over 2 hours.",
+  },
+  {
+    stat: "feedback",
+    label: "Feedback",
+    explain: "How useful applicants found the feedback or explanation they were given.",
+  },
+] as const;
+
 export const TIME_TO_ANSWER: Opt[] = [
   { value: "under_2w", label: "Under 2 weeks" },
   { value: "2_4w", label: "2–4 weeks" },
